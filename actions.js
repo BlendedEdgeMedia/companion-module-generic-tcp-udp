@@ -31,31 +31,30 @@ export function getActionDefinitions(self) {
 			callback: async (action) => {
 				const cmd = unescape(await self.parseVariablesInString(action.options.id_send))
 
-				if (cmd != '') {
-					/*
-					 * create a binary buffer pre-encoded 'latin1' (8bit no change bytes)
-					 * sending a string assumes 'utf8' encoding
-					 * which then escapes character values over 0x7F
-					 * and destroys the 'binary' content
-					 */
-					const sendBuf = Buffer.from(cmd + action.options.id_end, 'latin1')
+				
+				/*
+				 * create a binary buffer pre-encoded 'latin1' (8bit no change bytes)
+				 * sending a string assumes 'utf8' encoding
+				 * which then escapes character values over 0x7F
+				 * and destroys the 'binary' content
+				 */
+				const sendBuf = Buffer.from(cmd + action.options.id_end, 'latin1')
 
-					if (self.config.prot == 'tcp') {
+				if (self.config.prot == 'tcp') {
+					self.log('debug', 'sending to ' + self.config.host + ': ' + sendBuf.toString())
+
+					if (self.socket !== undefined && self.socket.isConnected) {
+						self.socket.send(sendBuf)
+					} else {
+						self.log('debug', 'Socket not connected :(')
+					}
+				}
+
+				if (self.config.prot == 'udp') {
+					if (self.udp !== undefined) {
 						self.log('debug', 'sending to ' + self.config.host + ': ' + sendBuf.toString())
 
-						if (self.socket !== undefined && self.socket.isConnected) {
-							self.socket.send(sendBuf)
-						} else {
-							self.log('debug', 'Socket not connected :(')
-						}
-					}
-
-					if (self.config.prot == 'udp') {
-						if (self.udp !== undefined) {
-							self.log('debug', 'sending to ' + self.config.host + ': ' + sendBuf.toString())
-
-							self.udp.send(sendBuf)
-						}
+						self.udp.send(sendBuf)
 					}
 				}
 			},
